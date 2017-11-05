@@ -368,6 +368,17 @@ returned when a ModuleContainer object is iterated over"""
         return self
 
 
+    def next(self):
+        """Internal Python iterating method, returns the next
+module name and object to be processed"""
+
+        if len(self.__iter_list) == 0:
+            self.__iter_list = None
+            raise StopIteration
+        else:
+            modname = self.__iter_list.pop()
+            return (modname, self.__modobjects[modname])
+
     def __next__(self):
         """Internal Python iterating method, returns the next
 module name and object to be processed"""
