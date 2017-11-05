@@ -51,11 +51,14 @@ class KernelInfo(object):
             v = p.strip().split()
             kcmd = v.pop(0)
             try:
-                if int(v[0]) > 0 and kcmd.startswith('[') and kcmd.endswith(']'):
+                if int(v[0]) > 0 and kcmd.startswith(b'[') and kcmd.endswith(b']'):
                     ret_kthreads[v[0]] = {'policy' : policies[v[1]],
                                           'priority' : v[2], 'name' : v[3] }
             except ValueError:
                 pass    # Ignore lines which don't have a number in the first row
+            except KeyError:
+                pass    # Ignore lines which don't have b'TS'
+
         return ret_kthreads
 
 
