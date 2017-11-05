@@ -25,7 +25,10 @@
 #   are deemed to be part of the source code.
 #
 
-import xmlrpc.client
+try:
+    import xmlrpclib
+except ModuleNotFoundError:
+    import xmlrpc.client
 import libxml2
 import io
 import bz2
