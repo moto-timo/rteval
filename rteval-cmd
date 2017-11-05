@@ -83,7 +83,10 @@ def summarize(repfile, xslt):
 
     # Parse and print the report through the XSLT template - preserve proper encoding
     resdoc = xsltprs(xmldoc)
-    print(str(resdoc).encode('UTF-8'))
+    try:
+        print(unicode(resdoc).encode('UTF-8'))
+    except NameError:
+        print(str(resdoc).encode('UTF-8'))
 
     # Clean up
     del resdoc
