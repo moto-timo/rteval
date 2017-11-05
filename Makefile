@@ -13,6 +13,7 @@ DATADIR	:=	$(DESTDIR)/$(PREFIX)/share
 CONFDIR	:=	$(DESTDIR)/etc
 MANDIR	:=	$(DESTDIR)/$(PREFIX)/share/man
 PYLIB	:= 	$(DESTDIR)$(shell python -c 'import distutils.sysconfig;  print distutils.sysconfig.get_python_lib()')
+PY3LIB	:= 	$(DESTDIR)$(shell python3 -c 'import distutils.sysconfig;  print(distutils.sysconfig.get_python_lib())')
 LOADDIR	:=	loadsource
 
 KLOAD	:=	$(LOADDIR)/linux-4.9.tar.xz
@@ -23,12 +24,23 @@ runit:
 	[ -d $(HERE)/run ] || mkdir run
 	python rteval-cmd -D -L -v --workdir=$(HERE)/run --loaddir=$(HERE)/loadsource --duration=$(D) -f $(HERE)/rteval.conf -i $(HERE)/rteval $(EXTRA)
 
+runit3:
+	[ -d $(HERE)/run ] || mkdir run
+	python3 rteval-cmd -D -L -v --workdir=$(HERE)/run --loaddir=$(HERE)/loadsource --duration=$(D) -f $(HERE)/rteval.conf -i $(HERE)/rteval $(EXTRA)
+
 load:
 	[ -d ./run ] || mkdir run
 	python rteval-cmd --onlyload -D -L -v --workdir=./run --loaddir=$(HERE)/loadsource -f $(HERE)/rteval/rteval.conf -i $(HERE)/rteval
 
+load3:
+	[ -d ./run ] || mkdir run
+	python3 rteval-cmd --onlyload -D -L -v --workdir=./run --loaddir=$(HERE)/loadsource -f $(HERE)/rteval/rteval.conf -i $(HERE)/rteval
+
 sysreport:
 	python rteval-cmd -D -v --workdir=$(HERE)/run --loaddir=$(HERE)/loadsource --duration=$(D) -i $(HERE)/rteval --sysreport
+
+sysreport3:
+	python3 rteval-cmd -D -v --workdir=$(HERE)/run --loaddir=$(HERE)/loadsource --duration=$(D) -i $(HERE)/rteval --sysreport
 
 clean:
 	[ -f $(XMLRPCDIR)/Makefile ] && make -C $(XMLRPCDIR) clean || echo -n
@@ -38,13 +50,20 @@ realclean: clean
 	[ -f $(XMLRPCDIR)/Makefile ] && make -C $(XMLRPCDIR) maintainer-clean || echo -n
 	rm -rf run rpm
 
-install: install_loads install_rteval
+install: install_loads install_rteval install_rteval3
 
 install_rteval: installdirs
 	if [ "$(DESTDIR)" = "" ]; then \
 		python setup.py install; \
 	else \
 		python setup.py install --root=$(DESTDIR); \
+	fi
+
+install_rteval3: installdirs
+	if [ "$(DESTDIR)" = "" ]; then \
+		python3 setup.py install; \
+	else \
+		python3 setup.py install --root=$(DESTDIR); \
 	fi
 
 install_loads:	$(LOADS)
@@ -58,6 +77,7 @@ installdirs:
 	[ -d $(CONFDIR) ] || mkdir -p $(CONFDIR)
 	[ -d $(MANDIR)/man8 ]  || mkdir -p $(MANDIR)/man8
 	[ -d $(PYLIB) ]   || mkdir -p $(PYLIB)
+	[ -d $(PY3LIB) ]   || mkdir -p $(PY3LIB)
 	[ -d $(DESTDIR)/usr/bin ] || mkdir -p $(DESTDIR)/usr/bin
 
 uninstall:
@@ -65,13 +85,20 @@ uninstall:
 	rm -f $(CONFDIR)/rteval.conf
 	rm -f $(MANDIR)/man8/rteval.8.gz
 	rm -rf $(PYLIB)/rteval
+	rm -rf $(PY3LIB)/rteval
 	rm -rf $(DATADIR)/rteval
 
-tarfile: rteval-$(VERSION).tar.bz2
+tarfile: rteval-$(VERSION).tar.bz2 rteval3-$(VERSION).tar.bz2
 
 rteval-$(VERSION).tar.bz2:
 	python setup.py sdist --formats=bztar --owner root --group root
 	mv dist/rteval-$(VERSION).tar.bz2 .
+	rmdir dist
+
+rteval3-$(VERSION).tar.bz2:
+	python3 setup.py sdist --formats=bztar --owner root --group root
+	mv dist/rteval-$(VERSION).tar.bz2 rteval3-$(VERSION).tar.bz2
+	rm -rf dist/__pycache__
 	rmdir dist
 
 rteval-xmlrpc-$(XMLRPCVER).tar.gz :
@@ -128,10 +155,12 @@ help:
 	@echo "rteval Makefile targets:"
 	@echo ""
 	@echo "        runit:     do a short testrun locally [default]"
+	@echo "        runit3:    do a short testrun locally with python3"
 	@echo "        rpm:       run rpmbuild for all rpms"
 	@echo "        rpmlint:   run rpmlint against all rpms/srpms/specfiles"
 	@echo "        tarfile:   create the source tarball"
 	@echo "        install:   install rteval locally"
 	@echo "        clean:     cleanup generated files"
 	@echo "        sysreport: do a short testrun and generate sysreport data"
+	@echo "        sysreport3: do a short testrun and generate sysreport data with python3"
 	@echo ""
