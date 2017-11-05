@@ -134,6 +134,22 @@ class rtevalCfgSection(object):
         return self
 
 
+    def next(self):
+        "Function used by the iterator"
+
+        if not self.__dict__['_rtevalCfgSection__iter_list'] \
+                or len(self.__dict__['_rtevalCfgSection__iter_list']) == 0:
+            raise StopIteration
+        else:
+            elmt = self.__dict__['_rtevalCfgSection__iter_list'].pop()
+
+            # HACK: This element shouldn't really appear here ... why!??!
+            while (elmt == '_rtevalCfgSection__cfgdata') and \
+                    (len(self.__dict__['_rtevalCfgSection__iter_list']) > 0):
+                elmt = self.__dict__['_rtevalCfgSection__iter_list'].pop()
+
+            return (elmt, self.__cfgdata[elmt])
+
     def __next__(self):
         "Function used by the iterator"
 
