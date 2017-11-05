@@ -128,9 +128,9 @@ measurement profiles, based on their characteristics"""
         "Loads and imports all the configured modules"
 
         for m in modcfg:
-            # hope to eventually have different kinds but module is only on
+            # hope to eventually have different kinds but module is only one
             # for now (jcw)
-            if m[1].lower() == 'module':
+            if m[1].lower() == 'module' or m[1].lower() == u'module':
                 self.__container.LoadModule(m[0])
 
 
@@ -159,7 +159,7 @@ measurement profiles, based on their characteristics"""
         cpulist = modcfg.cpulist
 
         for (modname, modtype) in modcfg:
-            if modtype.lower() == 'module':  # Only 'module' will be supported (ds)
+            if modtype.lower() == 'module' or modtype.lower() == u'module':  # Only 'module' will be supported (ds)
                 # Extract the measurement modules info
                 modinfo = self.__container.ModuleInfo(modname)
 
@@ -203,6 +203,17 @@ measurement profiles, based on their characteristics"""
         self.__iter_item = len(self.__measureprofiles)
         return self
 
+
+    def next(self):
+        """Internal Python iterating method, returns the next
+MeasurementProfile object to be processed"""
+
+        if self.__iter_item == 0:
+            self.__iter_item = None
+            raise StopIteration
+        else:
+            self.__iter_item -= 1
+            return self.__measureprofiles[self.__iter_item]
 
     def __next__(self):
         """Internal Python iterating method, returns the next
