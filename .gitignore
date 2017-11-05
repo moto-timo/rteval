@@ -12,6 +12,7 @@ tarball
 *.xml
 *.o
 *.swp
+*.bak
 Makefile.in
 aclocal.m4
 config.h.in
