@@ -117,8 +117,7 @@ def unit_test(rootdir):
         osi = OSInfo(logger=log)
         print("Base OS: %s" % osi.get_base_os())
 
-        print("Testing OSInfo::copy_dmesg('/tmp'): ", end=' ')
-        osi.copy_dmesg('/tmp')
+        print("Testing OSInfo::copy_dmesg('/tmp'): %s" % osi.copy_dmesg('/tmp'))
         if os.path.isfile("/tmp/dmesg"):
             md5orig = subprocess.check_output(("md5sum","/var/log/dmesg"))
             md5copy = subprocess.check_output(("md5sum","/tmp/dmesg"))
