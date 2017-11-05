@@ -207,6 +207,13 @@ class SysTopology(object):
         return self
 
     # iterator function
+    def next(self):
+        if self.current >= len(self.nodes):
+            raise StopIteration
+        n = self.nodes[self.current]
+        self.current += 1
+        return n
+
     def __next__(self):
         if self.current >= len(self.nodes):
             raise StopIteration
