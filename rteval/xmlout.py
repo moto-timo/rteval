@@ -29,7 +29,10 @@ import libxml2
 import lxml.etree
 import codecs
 import re
-from string import maketrans
+try:
+    from string import maketrans
+except ImportError:
+    pass
 
 
 def convert_libxml2_to_lxml_doc(inxml):
@@ -51,7 +54,13 @@ def convert_lxml_to_libxml2_nodes(inlxml):
     if not isinstance(inlxml,lxml.etree._Element) and not isinstance(inlxml, lxml.etree._XSLTResultTree):
         raise TypeError('Function requires an lxml.etree object as input')
 
-    return libxml2.parseDoc(lxml.etree.tostring(inlxml)).getRootElement()
+    try:
+        doc = libxml2.parseDoc(lxml.etree.tostring(inlxml))
+    except AttributeError:
+        doc = libxml2.parseDoc(str(lxml.etree.tostring(inlxml)))
+    except TypeError:
+        doc = libxml2.parseDoc(lxml.etree.tostring(inlxml).decode('utf-8'))
+    return doc.getRootElement()
 
 
 
@@ -74,12 +83,15 @@ class XMLOut(object):
             self.xmldoc.freeDoc()
 
     def __setup_tag_trans(self):
-        t = maketrans('', '')
-        t = t.replace(' ', '_')
-        t = t.replace('\t', '_')
-        t = t.replace('(', '_')
-        t = t.replace(')', '_')
-        t = t.replace(':', '-')
+        try:
+            t = maketrans('', '')
+            t = t.replace(' ', '_')
+            t = t.replace('\t', '_')
+            t = t.replace('(', '_')
+            t = t.replace(')', '_')
+            t = t.replace(':', '-')
+        except NameError:
+            t = str.maketrans(' \t():', '____-')
         return t
 
     def __fixtag(self, tagname):
@@ -88,20 +100,35 @@ class XMLOut(object):
         return tagname.translate(self.tag_trans)
 
     def __encode(self, value, tagmode = False):
-        if type(value) is str:
-            val = value
-        elif type(value) is str:
-            val = str(value)
-        else:
-            val = str(str(value))
+        try:
+            if type(value) is unicode:
+                val = value
+            elif type(value) is str:
+                val = unicode(value)
+            else:
+                val = unicode(str(value))
+
+            if tagmode is True:
+                rx = re.compile(" ")
+                val = rx.sub("_", val)
+
+            # libxml2 uses UTF-8 internally and must have
+            # all input as UTF-8.
+            return val.encode('utf-8')
+
+        except NameError:
+            if type(value) is bytes:
+                val = value
+            elif type(value) is str:
+                val = value
+            else:
+                val = str(value)
 
         if tagmode is True:
             rx = re.compile(" ")
             val = rx.sub("_", val)
 
-        # libxml2 uses UTF-8 internally and must have
-        # all input as UTF-8.
-        return val.encode('utf-8')
+        return val
 
 
     def __add_attributes(self, node, attr):
@@ -116,28 +143,52 @@ class XMLOut(object):
             # unknown types.
 
             t = type(data)
-            if t is str or t is str or t is int or t is float:
-                n = libxml2.newText(self.__encode(data))
-                node.addChild(n)
-            elif t is bool:
-                v = data and "1" or "0"
-                n = libxml2.newText(self.__encode(v))
-                node.addChild(n)
-            elif t is dict:
-                for (key, val) in data.items():
-                    node2 = libxml2.newNode(self.__encode(self.parsedata_prefix + key, True))
-                    self.__parseToXML(node2, val)
-                    node.addChild(node2)
-            elif t is tuple:
-                for v in data:
-                    if type(v) is dict:
-                        self.__parseToXML(node, v)
-                    else:
-                        n = libxml2.newNode(self.tuple_tagname)
-                        self.__parseToXML(n, v)
-                        node.addChild(n)
-            else:
-                raise TypeError("unhandled type (%s) for value '%s'" % (type(data), str(data)))
+            try:
+                if t is unicode or t is str or t is int or t is float:
+                    n = libxml2.newText(self.__encode(data))
+                    node.addChild(n)
+                elif t is bool:
+                    v = data and "1" or "0"
+                    n = libxml2.newText(self.__encode(v))
+                    node.addChild(n)
+                elif t is dict:
+                    for (key, val) in data.items():
+                        node2 = libxml2.newNode(self.__encode(self.parsedata_prefix + key, True))
+                        self.__parseToXML(node2, val)
+                        node.addChild(node2)
+                elif t is tuple:
+                    for v in data:
+                        if type(v) is dict:
+                            self.__parseToXML(node, v)
+                        else:
+                            n = libxml2.newNode(self.tuple_tagname)
+                            self.__parseToXML(n, v)
+                            node.addChild(n)
+                else:
+                    raise TypeError("unhandled type (%s) for value '%s'" % (type(data), str(data)))
+            except NameError:
+                if t is str or t is int or t is float:
+                    n = libxml2.newText(self.__encode(data))
+                    node.addChild(n)
+                elif t is bool:
+                    v = data and "1" or "0"
+                    n = libxml2.newText(self.__encode(v))
+                    node.addChild(n)
+                elif t is dict:
+                    for (key, val) in data.items():
+                        node2 = libxml2.newNode(self.__encode(self.parsedata_prefix + key, True))
+                        self.__parseToXML(node2, val)
+                        node.addChild(node2)
+                elif t is tuple:
+                    for v in data:
+                        if type(v) is dict:
+                            self.__parseToXML(node, v)
+                        else:
+                            n = libxml2.newNode(self.tuple_tagname)
+                            self.__parseToXML(n, v)
+                            node.addChild(n)
+                else:
+                    raise TypeError("unhandled type (%s) for value '%s'" % (type(data), str(data)))
 
     def close(self):
         if self.status == 0:
@@ -223,7 +274,10 @@ class XMLOut(object):
             resdoc = parser(xmldoc)
 
             #  Write the file with the requested output encoding
-            dstfile.write(str(resdoc).encode(self.encoding))
+            try:
+                dstfile.write(unicode(resdoc).encode(self.encoding))
+            except NameError:
+                dstfile.write(str(resdoc))
 
             if dstfile != sys.stdout:
                 dstfile.close()
@@ -297,7 +351,7 @@ def unit_test(rootdir):
         x.taggedvalue('date', '2000-11-22')
         x.closeblock()
         x.openblock('uname')
-        x.taggedvalue('node', 'testing - \xe6\xf8')
+        x.taggedvalue('node', u'testing - \xe6\xf8')
         x.taggedvalue('kernel', 'my_test_kernel', {'is_RT': 0})
         x.taggedvalue('arch', 'mips')
         x.closeblock()
@@ -348,14 +402,14 @@ def unit_test(rootdir):
                           "varA4": {'another_level': True,
                                     'another_value': "blabla"}
                           },
-                "utf8 data": 'æøå',
-                "løpe": True}
+                "utf8 data": u'æøå',
+                u"løpe": True}
         x.ParseData("ParseTest", test, {"type": "dict"}, prefix="test ")
         x.close()
         x.Write("-")
         return 0
     except Exception as e:
-        print("** EXCEPTION %s", str(e))
+        print("** EXCEPTION %s" % str(e))
         return 1
 
 if __name__ == '__main__':
