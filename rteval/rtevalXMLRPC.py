@@ -24,8 +24,13 @@
 #   are deemed to be part of the source code.
 #
 
-import socket, time
-import rtevalclient, xmlrpc.client
+import socket
+import time
+import rteval.rtevalclient
+try:
+    import xmlrpclib
+except ModuleNotFoundError:
+    import xmlrpc.client
 from .Log import Log
 
 class rtevalXMLRPC(object):
