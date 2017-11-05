@@ -278,7 +278,7 @@ class Cyclictest(rtevalModulePrototype):
             self.__cmd.append("--notrace")
 
         # Buffer for cyclictest data written to stdout
-        self.__cyclicoutput = tempfile.SpooledTemporaryFile(mode='rw+b')
+        self.__cyclicoutput = tempfile.SpooledTemporaryFile(mode='w+b')
 
 
     def _WorkloadTask(self):
@@ -299,13 +299,13 @@ class Cyclictest(rtevalModulePrototype):
             fp.close()
 
         self.__cyclicoutput.seek(0)
-	try:
+        try:
             self.__cyclicprocess = subprocess.Popen(self.__cmd,
                                                 stdout=self.__cyclicoutput,
                                                 stderr=self.__nullfp,
                                                 stdin=self.__nullfp)
             self.__started = True
-	except OSError:
+        except OSError:
             self.__started = False
 
 
@@ -327,9 +327,9 @@ class Cyclictest(rtevalModulePrototype):
         # now parse the histogram output
         self.__cyclicoutput.seek(0)
         for line in self.__cyclicoutput:
-            if line.startswith('#'):
+            if line.startswith(b'#'):
                 # Catch if cyclictest stopped due to a breaktrace
-                if line.startswith('# Break value: '):
+                if line.startswith(b'# Break value: '):
                     self.__breaktraceval = int(line.split(':')[1])
                 continue
 
